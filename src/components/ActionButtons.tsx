@@ -22,52 +22,64 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     isFavorite,
 }) => {
     return (
-        <View style={styles.container}>
-            {/* Go to Favorites */}
-            <TouchableOpacity
-                style={styles.button}
-                onPress={onGoToFavorites}
-                activeOpacity={0.7}
-            >
-                <Ionicons name="list" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
+        <>
+            {/* Go to Favorites - Left side */}
+            <View style={styles.leftContainer}>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={onGoToFavorites}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="list" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+            </View>
 
-            {/* Favorite Button */}
-            <TouchableOpacity
-                style={[styles.button, isFavorite && styles.favoriteActive]}
-                onPress={onFavorite}
-                activeOpacity={0.7}
-            >
-                <Ionicons
-                    name={isFavorite ? "heart" : "heart-outline"}
-                    size={28}
-                    color={isFavorite ? "#FF6B6B" : "#FFFFFF"}
-                />
-            </TouchableOpacity>
+            {/* Main buttons - Right side */}
+            <View style={styles.rightContainer}>
+                {/* Favorite Button */}
+                <TouchableOpacity
+                    style={[styles.button, isFavorite && styles.favoriteActive]}
+                    onPress={onFavorite}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons
+                        name={isFavorite ? "heart" : "heart-outline"}
+                        size={28}
+                        color={isFavorite ? "#FF6B6B" : "#FFFFFF"}
+                    />
+                </TouchableOpacity>
 
-            {/* Customize Button */}
-            <TouchableOpacity
-                style={styles.button}
-                onPress={onCustomize}
-                activeOpacity={0.7}
-            >
-                <Ionicons name="color-palette-outline" size={28} color="#FFFFFF" />
-            </TouchableOpacity>
+                {/* Customize Button */}
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={onCustomize}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="color-palette-outline" size={28} color="#FFFFFF" />
+                </TouchableOpacity>
 
-            {/* Share Button */}
-            <TouchableOpacity
-                style={[styles.button, styles.shareButton]}
-                onPress={onShare}
-                activeOpacity={0.7}
-            >
-                <Ionicons name="share-social-outline" size={28} color="#FFFFFF" />
-            </TouchableOpacity>
-        </View>
+                {/* Share Button */}
+                <TouchableOpacity
+                    style={[styles.button, styles.shareButton]}
+                    onPress={onShare}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="share-social-outline" size={28} color="#FFFFFF" />
+                </TouchableOpacity>
+            </View>
+        </>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    leftContainer: {
+        position: 'absolute',
+        bottom: 50,
+        left: 20,
+        flexDirection: 'column',
+        gap: 16,
+    },
+    rightContainer: {
         position: 'absolute',
         bottom: 50,
         right: 20,
