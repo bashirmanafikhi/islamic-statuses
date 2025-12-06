@@ -14,28 +14,26 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.islamicstatuses.app"
+      "bundleIdentifier": "com.bashirmanafikhi.whatsappvideostatuses"
     },
     "android": {
+      "package": "com.bashirmanafikhi.whatsappvideostatuses",
+      "versionCode": 52,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a1a2e"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.islamicstatuses.app",
-      "softwareKeyboardLayoutMode": "pan",
-      "navigationBar": {
-        "visible": false
-      },
-      "statusBar": {
-        "hidden": true
-      }
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "supportsRTL": true
+      "supportsRTL": true,
+      "eas": {
+        "projectId": "6abcabfd-5b69-4b28-8557-7900279009b6"
+      }
     }
   }
 }
