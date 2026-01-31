@@ -6,6 +6,8 @@ export interface Ayah {
     ayahNumber: number;
     surahNumber: number;
     verseKey: string;
+    tafseer?: string;
+    meanings?: string;
 }
 
 export interface Surah {
@@ -27,7 +29,10 @@ export interface CardData {
     backgroundImage: any; // require() returns any
     backgroundIndex: number;
     fontFamily: string;
+    tafseer?: string;
+    meanings?: string;
 }
+
 
 export interface FavoriteCard {
     id: string;

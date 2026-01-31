@@ -4,10 +4,23 @@ import { Ayah, Surah, AyahWithSurah } from '../types';
 // Import JSON data
 const ayahData = require('../../assets/json/ayah.json');
 const surahData = require('../../assets/json/surah.json');
+const muyassarData = require('../../assets/json/muyassar.json');
+const ma3anyData = require('../../assets/json/ma3any.json');
 
 // Convert object to array for easier access
 const ayahArray: any[] = Object.values(ayahData);
 const surahMap: Record<number, any> = surahData;
+
+// Create maps for faster lookup of tafseer and meanings by surah and aya
+const muyassarMap: Record<string, string> = {};
+muyassarData.forEach((item: any) => {
+    muyassarMap[`${item.sura}-${item.aya}`] = item.text;
+});
+
+const ma3anyMap: Record<string, string> = {};
+ma3anyData.forEach((item: any) => {
+    ma3anyMap[`${item.sura}-${item.aya}`] = item.text;
+});
 
 /**
  * Get a random ayah with its surah information
@@ -16,6 +29,7 @@ export const getRandomAyah = (): AyahWithSurah => {
     const randomIndex = Math.floor(Math.random() * ayahArray.length);
     const rawAyah = ayahArray[randomIndex];
     const rawSurah = surahMap[rawAyah.surah_number];
+    const key = `${rawAyah.surah_number}-${rawAyah.ayah_number}`;
 
     return {
         ayah: {
@@ -24,6 +38,8 @@ export const getRandomAyah = (): AyahWithSurah => {
             ayahNumber: rawAyah.ayah_number,
             surahNumber: rawAyah.surah_number,
             verseKey: rawAyah.verse_key,
+            tafseer: muyassarMap[key],
+            meanings: ma3anyMap[key],
         },
         surah: {
             id: rawSurah.id,
@@ -42,6 +58,8 @@ export const getAyahById = (id: number): AyahWithSurah | null => {
     if (!rawAyah) return null;
 
     const rawSurah = surahMap[rawAyah.surah_number];
+    const key = `${rawAyah.surah_number}-${rawAyah.ayah_number}`;
+
     return {
         ayah: {
             id: rawAyah.id,
@@ -49,6 +67,8 @@ export const getAyahById = (id: number): AyahWithSurah | null => {
             ayahNumber: rawAyah.ayah_number,
             surahNumber: rawAyah.surah_number,
             verseKey: rawAyah.verse_key,
+            tafseer: muyassarMap[key],
+            meanings: ma3anyMap[key],
         },
         surah: {
             id: rawSurah.id,
@@ -58,6 +78,7 @@ export const getAyahById = (id: number): AyahWithSurah | null => {
         },
     };
 };
+
 
 /**
  * Get total number of ayahs

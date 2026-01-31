@@ -18,12 +18,15 @@ import StoryCard from './src/components/StoryCard';
 import ActionButtons from './src/components/ActionButtons';
 import CustomizationModal from './src/components/CustomizationModal';
 import FavoritesScreen from './src/screens/FavoritesScreen';
+import AppMenuModal from './src/components/AppMenuModal';
 
 import { FONTS, getRandomFont } from './src/constants/fonts';
 import { BACKGROUND_IMAGES, getRandomBackground } from './src/constants/images';
 import { getRandomAyah } from './src/utils/dataLoader';
 import { toggleFavorite, isFavorite } from './src/utils/favorites';
 import { CardData } from './src/types';
+import { useQuranAudio } from './src/hooks/useQuranAudio';
+
 
 const { width } = Dimensions.get('window');
 
@@ -56,6 +59,13 @@ function MainContent() {
 
     // Navigation state
     const [showFavorites, setShowFavorites] = useState(false);
+    const [menuVisible, setMenuVisible] = useState(false);
+
+    // Tafseer state: 0 (none), 1 (muyassar), 2 (ma3any)
+    const [tafseerState, setTafseerState] = useState(0);
+
+    // Audio hook
+    const { onPlayPause, playingKey, ayaKey, status } = useQuranAudio();
 
     // Cards data
     const [cards, setCards] = useState<CardData[]>(() => generateInitialCards(10));
@@ -84,6 +94,25 @@ function MainContent() {
         };
         checkFavorite();
     }, [currentIndex, currentCard?.ayah.id, currentCard?.backgroundIndex]);
+
+    // Handle audio for the current card
+    const handleAudio = useCallback(() => {
+        if (!currentCard) return;
+        onPlayPause({
+            surah_number: currentCard.ayah.surahNumber,
+            ayah_number: currentCard.ayah.ayahNumber,
+        });
+    }, [currentCard, onPlayPause]);
+
+    const isPlaying = useMemo(() => {
+        if (!currentCard) return false;
+        const key = ayaKey(currentCard.ayah.surahNumber, currentCard.ayah.ayahNumber);
+        return playingKey === key && status.playing;
+    }, [currentCard, playingKey, status.playing, ayaKey]);
+
+    const handleToggleTafseer = useCallback(() => {
+        setTafseerState(prev => (prev + 1) % 3);
+    }, []);
 
     // Handle viewability change - only update if different
     const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -193,6 +222,7 @@ function MainContent() {
                     fontFamily={item.fontFamily}
                     height={screenHeight}
                     showWatermark={true}
+                    tafseerState={tafseerState}
                 />
 
                 {/* Action buttons only on current card */}
@@ -201,13 +231,18 @@ function MainContent() {
                         onShare={handleShare}
                         onCustomize={() => setModalVisible(true)}
                         onFavorite={handleToggleFavorite}
-                        onGoToFavorites={() => setShowFavorites(true)}
+                        onMenu={() => setMenuVisible(true)}
+                        onAudio={handleAudio}
+                        onToggleTafseer={handleToggleTafseer}
+                        tafseerState={tafseerState}
                         isFavorite={currentIsFavorite}
+                        isPlaying={isPlaying}
                     />
                 )}
             </View>
         );
-    }, [currentIndex, handleShare, handleToggleFavorite, currentIsFavorite, screenHeight]);
+    }, [currentIndex, handleShare, handleToggleFavorite, currentIsFavorite, screenHeight, isPlaying, handleAudio, handleToggleTafseer, tafseerState]);
+
 
     // Show favorites screen
     if (showFavorites) {
@@ -258,9 +293,17 @@ function MainContent() {
                 previewBackground={currentCard?.backgroundImage}
                 previewFont={currentCard?.fontFamily ?? 'Amiri'}
             />
+
+            {/* App Menu Modal */}
+            <AppMenuModal
+                visible={menuVisible}
+                onClose={() => setMenuVisible(false)}
+                onGoToFavorites={() => setShowFavorites(true)}
+            />
         </View>
     );
 }
+
 
 export default function App() {
     // Load fonts

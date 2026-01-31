@@ -18,17 +18,19 @@ interface StoryCardProps {
     showWatermark?: boolean;
     height: number; // Dynamic height from parent
     compact?: boolean; // For preview mode
+    tafseerState?: number; // 0: None, 1: Muyassar, 2: Ma3any
 }
+
 
 /**
  * StoryCard Component
  * Fullscreen card displaying an ayah with background image
  */
 const StoryCard = forwardRef<View, StoryCardProps>(
-    ({ ayah, surah, backgroundImage, fontFamily, showWatermark = false, height, compact = false }, ref) => {
+    ({ ayah, surah, backgroundImage, fontFamily, showWatermark = false, height, compact = false, tafseerState = 0 }, ref) => {
         const dynamicStyles = {
             container: {
-                width: compact ? '100%' : width,
+                width: (compact ? '100%' : width) as any,
                 height: compact ? 200 : height,
             },
             ayahText: {
@@ -39,6 +41,9 @@ const StoryCard = forwardRef<View, StoryCardProps>(
                 fontSize: compact ? 14 : 22,
             },
         };
+
+        const tafseerText = tafseerState === 1 ? ayah.tafseer : (tafseerState === 2 ? ayah.meanings : null);
+        const tafseerTitle = tafseerState === 1 ? 'التفسير الميسر' : 'معاني الكلمات';
 
         return (
             <View ref={ref} style={[styles.container, dynamicStyles.container]} collapsable={false}>
@@ -63,11 +68,21 @@ const StoryCard = forwardRef<View, StoryCardProps>(
                         <View style={styles.ayahContainer}>
                             <Text
                                 style={[styles.ayahText, { fontFamily }, dynamicStyles.ayahText]}
-                                numberOfLines={compact ? 4 : undefined}
+                                numberOfLines={compact ? 4 : (tafseerState > 0 ? 8 : undefined)}
                             >
                                 {ayah.text}
                             </Text>
                         </View>
+
+                        {/* Tafseer / Meanings Section */}
+                        {!compact && tafseerState > 0 && tafseerText && (
+                            <View style={styles.tafseerContainer}>
+                                <Text style={styles.tafseerTitle}>{tafseerTitle}</Text>
+                                <Text style={styles.tafseerText} numberOfLines={6}>
+                                    {tafseerText.replace(/<br>/g, '\n')}
+                                </Text>
+                            </View>
+                        )}
 
                         {/* Verse key */}
                         {!compact && (
@@ -78,6 +93,7 @@ const StoryCard = forwardRef<View, StoryCardProps>(
                             </View>
                         )}
                     </View>
+
 
                     {/* Watermark for shared images */}
                     {showWatermark && !compact && (
@@ -154,7 +170,31 @@ const styles = StyleSheet.create({
         color: '#FFD700',
         textAlign: 'center',
     },
+    tafseerContainer: {
+        marginTop: 20,
+        padding: 16,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        borderRadius: 16,
+        width: '100%',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.3)',
+    },
+    tafseerTitle: {
+        fontSize: 14,
+        color: '#FFD700',
+        fontWeight: 'bold',
+        marginBottom: 8,
+        textAlign: 'right',
+    },
+    tafseerText: {
+        fontSize: 16,
+        color: '#FFFFFF',
+        textAlign: 'right',
+        lineHeight: 24,
+        fontFamily: 'System', // Standard readable font for tafseer
+    },
     watermarkContainer: {
+
         position: 'absolute',
         bottom: 20,
         left: 0,
