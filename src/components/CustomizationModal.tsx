@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BACKGROUND_IMAGES } from '../constants/images';
-import { Ayah, Surah } from '../types';
+import { Ayah, Surah, Hadith } from '../types';
 import StoryCard from './StoryCard';
 
 const { width } = Dimensions.get('window');
@@ -27,8 +27,10 @@ interface CustomizationModalProps {
     onShare: () => void;
     selectedBackgroundIndex: number;
     // Preview data
-    previewAyah: Ayah;
-    previewSurah: Surah;
+    type: 'quran' | 'hadith';
+    previewAyah?: Ayah;
+    previewSurah?: Surah;
+    previewHadith?: Hadith;
     previewBackground: any;
     previewFont: string;
 }
@@ -45,8 +47,10 @@ const CustomizationModal: React.FC<CustomizationModalProps> = ({
     onRandomFont,
     onShare,
     selectedBackgroundIndex,
+    type,
     previewAyah,
     previewSurah,
+    previewHadith,
     previewBackground,
     previewFont,
 }) => {
@@ -69,8 +73,10 @@ const CustomizationModal: React.FC<CustomizationModalProps> = ({
                         <Text style={styles.previewLabel}>المعاينة</Text>
                         <View style={styles.previewCard}>
                             <StoryCard
+                                type={type}
                                 ayah={previewAyah}
                                 surah={previewSurah}
+                                hadith={previewHadith}
                                 backgroundImage={previewBackground}
                                 fontFamily={previewFont}
                                 height={PREVIEW_HEIGHT}
@@ -81,12 +87,12 @@ const CustomizationModal: React.FC<CustomizationModalProps> = ({
 
                     {/* Action Buttons Row */}
                     <View style={styles.actionsRow}>
-                        {/* New Ayah */}
+                        {/* New Item */}
                         <TouchableOpacity style={styles.actionButton} onPress={onNewAyah}>
                             <View style={styles.actionIconContainer}>
                                 <Ionicons name="refresh" size={24} color="#FFD700" />
                             </View>
-                            <Text style={styles.actionText}>آية جديدة</Text>
+                            <Text style={styles.actionText}>{type === 'quran' ? 'آية جديدة' : 'حديث جديد'}</Text>
                         </TouchableOpacity>
 
                         {/* Random Font */}

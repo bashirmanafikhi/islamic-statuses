@@ -1,4 +1,4 @@
-// Type definitions for Islamic Statuses app
+export type ContentFilter = 'quran' | 'hadith' | 'both';
 
 export interface Ayah {
     id: number;
@@ -17,6 +17,22 @@ export interface Surah {
     nameSimple: string;
 }
 
+export interface Hadith {
+    id: number;
+    idInBook: number;
+    chapterId: number;
+    bookId: number;
+    arabic: string;
+    english: {
+        narrator: string;
+        text: string;
+    };
+    metadata?: {
+        title: string;
+        author: string;
+    };
+}
+
 export interface AyahWithSurah {
     ayah: Ayah;
     surah: Surah;
@@ -24,8 +40,10 @@ export interface AyahWithSurah {
 
 export interface CardData {
     id: string;
-    ayah: Ayah;
-    surah: Surah;
+    type: 'quran' | 'hadith';
+    ayah?: Ayah;
+    surah?: Surah;
+    hadith?: Hadith;
     backgroundImage: any; // require() returns any
     backgroundIndex: number;
     fontFamily: string;
@@ -36,7 +54,9 @@ export interface CardData {
 
 export interface FavoriteCard {
     id: string;
-    ayahId: number;
+    type: 'quran' | 'hadith';
+    ayahId?: number;
+    hadithId?: number;
     backgroundIndex: number;
     fontFamily: string;
     createdAt: number;

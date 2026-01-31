@@ -17,7 +17,7 @@ import * as Sharing from 'expo-sharing';
 import StoryCard from '../components/StoryCard';
 import { FavoriteCard, CardData } from '../types';
 import { getFavorites, removeFavorite } from '../utils/favorites';
-import { getAyahById } from '../utils/dataLoader';
+import { getAyahById, getHadithById } from '../utils/dataLoader';
 import { getBackgroundByIndex } from '../constants/images';
 
 const { width } = Dimensions.get('window');
@@ -59,17 +59,38 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ onBack }) => {
         setFavorites(favs);
 
         // Convert favorites to cards
-        const cardData: CardData[] = favs.map(fav => {
-            const ayahData = getAyahById(fav.ayahId);
-            return {
-                id: fav.id,
-                ayah: ayahData!.ayah,
-                surah: ayahData!.surah,
-                backgroundImage: getBackgroundByIndex(fav.backgroundIndex),
-                backgroundIndex: fav.backgroundIndex,
-                fontFamily: fav.fontFamily,
-            };
-        }).filter(card => card.ayah); // Filter out any null ayahs
+        const cardData: CardData[] = favs.flatMap((fav): CardData[] => {
+            const isQuran = fav.type === 'quran';
+            const backgroundImage = getBackgroundByIndex(fav.backgroundIndex);
+
+            if (isQuran && fav.ayahId) {
+                const ayahData = getAyahById(fav.ayahId);
+                if (ayahData) {
+                    return [{
+                        id: fav.id,
+                        type: 'quran' as const,
+                        ayah: ayahData.ayah,
+                        surah: ayahData.surah,
+                        backgroundImage,
+                        backgroundIndex: fav.backgroundIndex,
+                        fontFamily: fav.fontFamily,
+                    }];
+                }
+            } else if (fav.type === 'hadith' && fav.hadithId) {
+                const hadithData = getHadithById(fav.hadithId);
+                if (hadithData) {
+                    return [{
+                        id: fav.id,
+                        type: 'hadith' as const,
+                        hadith: hadithData,
+                        backgroundImage,
+                        backgroundIndex: fav.backgroundIndex,
+                        fontFamily: fav.fontFamily,
+                    }];
+                }
+            }
+            return [];
+        });
 
         setCards(cardData);
         setLoading(false);
@@ -125,8 +146,10 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ onBack }) => {
             <View style={[styles.cardWrapper, { height: screenHeight }]}>
                 <StoryCard
                     ref={(ref) => { cardRefs.current[item.id] = ref; }}
+                    type={item.type}
                     ayah={item.ayah}
                     surah={item.surah}
+                    hadith={item.hadith}
                     backgroundImage={item.backgroundImage}
                     fontFamily={item.fontFamily}
                     height={screenHeight}

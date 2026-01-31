@@ -3,15 +3,18 @@ import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface ActionButtonsProps {
+    type: 'quran' | 'hadith';
     onShare: () => void;
     onCustomize: () => void;
     onFavorite: () => void;
     onMenu: () => void;
     onAudio: () => void;
     onToggleTafseer: () => void;
+    onToggleEnglish?: () => void;
     tafseerState: number; // 0: None, 1: Muyassar, 2: Ma3any
     isFavorite: boolean;
     isPlaying: boolean;
+    showEnglish?: boolean;
 }
 
 /**
@@ -19,16 +22,21 @@ interface ActionButtonsProps {
  * Floating action buttons with improved hierarchy and ergonomics
  */
 const ActionButtons: React.FC<ActionButtonsProps> = ({
+    type,
     onShare,
     onCustomize,
     onFavorite,
     onMenu,
     onAudio,
     onToggleTafseer,
+    onToggleEnglish,
     tafseerState,
     isFavorite,
     isPlaying,
+    showEnglish,
 }) => {
+    const isQuran = type === 'quran';
+
     return (
         <View style={styles.container}>
             {/* Top actions */}
@@ -42,18 +50,20 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                     <Ionicons name="menu" size={28} color="#FFFFFF" />
                 </TouchableOpacity>
 
-                {/* Audio */}
-                <TouchableOpacity
-                    style={[styles.button, isPlaying && styles.audioActive]}
-                    onPress={onAudio}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons
-                        name={isPlaying ? 'pause' : 'volume-medium'}
-                        size={28}
-                        color={isPlaying ? '#4FACFE' : '#FFFFFF'}
-                    />
-                </TouchableOpacity>
+                {/* Audio (Quran Only) */}
+                {isQuran && (
+                    <TouchableOpacity
+                        style={[styles.button, isPlaying && styles.audioActive]}
+                        onPress={onAudio}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons
+                            name={isPlaying ? 'pause' : 'volume-medium'}
+                            size={28}
+                            color={isPlaying ? '#4FACFE' : '#FFFFFF'}
+                        />
+                    </TouchableOpacity>
+                )}
             </View>
 
             {/* Bottom actions */}
@@ -71,28 +81,48 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                     />
                 </TouchableOpacity>
 
-                {/* Tafseer */}
-                <TouchableOpacity
-                    style={[
-                        styles.button,
-                        tafseerState > 0 && styles.tafseerActive,
-                    ]}
-                    onPress={onToggleTafseer}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons
-                        name={tafseerState === 0 ? 'book-outline' : 'book'}
-                        size={26}
-                        color={tafseerState > 0 ? '#FFD700' : '#FFFFFF'}
-                    />
-                    {tafseerState > 0 && (
-                        <View style={styles.stateIndicator}>
-                            <Text style={styles.stateText}>
-                                {tafseerState === 1 ? 'ت' : 'م'}
-                            </Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
+                {/* Tafseer (Quran Only) */}
+                {isQuran && (
+                    <TouchableOpacity
+                        style={[
+                            styles.button,
+                            tafseerState > 0 && styles.tafseerActive,
+                        ]}
+                        onPress={onToggleTafseer}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons
+                            name={tafseerState === 0 ? 'book-outline' : 'book'}
+                            size={26}
+                            color={tafseerState > 0 ? '#FFD700' : '#FFFFFF'}
+                        />
+                        {tafseerState > 0 && (
+                            <View style={styles.stateIndicator}>
+                                <Text style={styles.stateText}>
+                                    {tafseerState === 1 ? 'ت' : 'م'}
+                                </Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                )}
+
+                {/* English Toggle (Hadith Only) */}
+                {!isQuran && (
+                    <TouchableOpacity
+                        style={[
+                            styles.button,
+                            showEnglish && styles.englishActive,
+                        ]}
+                        onPress={onToggleEnglish}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons
+                            name="language-outline"
+                            size={26}
+                            color={showEnglish ? '#A8CD9F' : '#FFFFFF'}
+                        />
+                    </TouchableOpacity>
+                )}
 
                 {/* Customize */}
                 <TouchableOpacity
@@ -159,6 +189,10 @@ const styles = StyleSheet.create({
     audioActive: {
         backgroundColor: 'rgba(79, 172, 254, 0.2)',
         borderColor: 'rgba(79, 172, 254, 0.5)',
+    },
+    englishActive: {
+        backgroundColor: 'rgba(168, 205, 159, 0.2)',
+        borderColor: 'rgba(168, 205, 159, 0.5)',
     },
     shareButton: {
         backgroundColor: 'rgba(255, 215, 0, 0.3)',

@@ -21,7 +21,8 @@ export const getFavorites = async (): Promise<FavoriteCard[]> => {
  * Add a card to favorites
  */
 export const addFavorite = async (
-    ayahId: number,
+    type: 'quran' | 'hadith',
+    id: number,
     backgroundIndex: number,
     fontFamily: string
 ): Promise<FavoriteCard> => {
@@ -30,13 +31,15 @@ export const addFavorite = async (
 
         // Check if already exists
         const exists = favorites.find(
-            f => f.ayahId === ayahId && f.backgroundIndex === backgroundIndex
+            f => f.type === type && (type === 'quran' ? f.ayahId === id : f.hadithId === id) && f.backgroundIndex === backgroundIndex
         );
         if (exists) return exists;
 
         const newFavorite: FavoriteCard = {
             id: `fav-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            ayahId,
+            type,
+            ayahId: type === 'quran' ? id : undefined,
+            hadithId: type === 'hadith' ? id : undefined,
             backgroundIndex,
             fontFamily,
             createdAt: Date.now(),
@@ -70,12 +73,12 @@ export const removeFavorite = async (id: string): Promise<void> => {
  * Check if a card is favorited
  */
 export const isFavorite = async (
-    ayahId: number,
+    contentId: number,
     backgroundIndex: number
 ): Promise<boolean> => {
     const favorites = await getFavorites();
     return favorites.some(
-        f => f.ayahId === ayahId && f.backgroundIndex === backgroundIndex
+        f => (f.ayahId === contentId || f.hadithId === contentId) && f.backgroundIndex === backgroundIndex
     );
 };
 
@@ -83,20 +86,21 @@ export const isFavorite = async (
  * Toggle favorite status
  */
 export const toggleFavorite = async (
-    ayahId: number,
+    type: 'quran' | 'hadith',
+    id: number,
     backgroundIndex: number,
     fontFamily: string
 ): Promise<{ isFavorite: boolean; favorite?: FavoriteCard }> => {
     const favorites = await getFavorites();
     const existing = favorites.find(
-        f => f.ayahId === ayahId && f.backgroundIndex === backgroundIndex
+        f => f.type === type && (type === 'quran' ? f.ayahId === id : f.hadithId === id) && f.backgroundIndex === backgroundIndex
     );
 
     if (existing) {
         await removeFavorite(existing.id);
         return { isFavorite: false };
     } else {
-        const favorite = await addFavorite(ayahId, backgroundIndex, fontFamily);
+        const favorite = await addFavorite(type, id, backgroundIndex, fontFamily);
         return { isFavorite: true, favorite };
     }
 };

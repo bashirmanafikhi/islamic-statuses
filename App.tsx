@@ -7,6 +7,7 @@ import {
     ActivityIndicator,
     Text,
     ViewToken,
+    Pressable,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -22,33 +23,61 @@ import AppMenuModal from './src/components/AppMenuModal';
 
 import { FONTS, getRandomFont } from './src/constants/fonts';
 import { BACKGROUND_IMAGES, getRandomBackground } from './src/constants/images';
-import { getRandomAyah } from './src/utils/dataLoader';
+import { getRandomAyah, getRandomHadith } from './src/utils/dataLoader';
 import { toggleFavorite, isFavorite } from './src/utils/favorites';
-import { CardData } from './src/types';
+import { CardData, ContentFilter } from './src/types';
 import { useQuranAudio } from './src/hooks/useQuranAudio';
 
 
 const { width } = Dimensions.get('window');
 
 // Generate a new card with random data
-const generateCard = (): CardData => {
-    const { ayah, surah } = getRandomAyah();
+const generateCard = (filter: ContentFilter = 'both', forceBothIndex?: number): CardData => {
+    let type: 'quran' | 'hadith' = 'quran';
+
+    if (filter === 'quran') {
+        type = 'quran';
+    } else if (filter === 'hadith') {
+        type = 'hadith';
+    } else {
+        // 'both' mode - if we have index, alternate. otherwise random.
+        if (forceBothIndex !== undefined) {
+            type = forceBothIndex % 2 === 0 ? 'quran' : 'hadith';
+        } else {
+            type = Math.random() > 0.5 ? 'quran' : 'hadith';
+        }
+    }
+
     const { source: backgroundImage, index: backgroundIndex } = getRandomBackground();
     const fontFamily = getRandomFont();
-
-    return {
+    const commonData = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        ayah,
-        surah,
         backgroundImage,
         backgroundIndex,
         fontFamily,
     };
+
+    if (type === 'quran') {
+        const { ayah, surah } = getRandomAyah();
+        return {
+            ...commonData,
+            type: 'quran',
+            ayah,
+            surah,
+        };
+    } else {
+        const hadith = getRandomHadith();
+        return {
+            ...commonData,
+            type: 'hadith',
+            hadith,
+        };
+    }
 };
 
 // Generate initial batch of cards
-const generateInitialCards = (count = 10): CardData[] => {
-    return Array.from({ length: count }, () => generateCard());
+const generateInitialCards = (count = 10, filter: ContentFilter = 'both'): CardData[] => {
+    return Array.from({ length: count }, (_, i) => generateCard(filter, i));
 };
 
 // Main content component (needs safe area context)
@@ -61,18 +90,21 @@ function MainContent() {
     const [showFavorites, setShowFavorites] = useState(false);
     const [menuVisible, setMenuVisible] = useState(false);
 
-    // Tafseer state: 0 (none), 1 (muyassar), 2 (ma3any)
+    // Content type filter
+    const [contentFilter, setContentFilter] = useState<ContentFilter>('both');
+    const [showHadithEnglish, setShowHadithEnglish] = useState(false);
+
+    // Audio and Tafseer state
+    const { playingKey, onPlayPause, ayaKey, status } = useQuranAudio();
     const [tafseerState, setTafseerState] = useState(0);
 
-    // Audio hook
-    const { onPlayPause, playingKey, ayaKey, status } = useQuranAudio();
-
     // Cards data
-    const [cards, setCards] = useState<CardData[]>(() => generateInitialCards(10));
+    const [cards, setCards] = useState<CardData[]>(() => generateInitialCards(10, 'both'));
     const [currentIndex, setCurrentIndex] = useState(0);
 
     // Modal state
     const [modalVisible, setModalVisible] = useState(false);
+    const [showActions, setShowActions] = useState(true);
 
     // Favorite state for current card
     const [currentIsFavorite, setCurrentIsFavorite] = useState(false);
@@ -88,16 +120,28 @@ function MainContent() {
     useEffect(() => {
         const checkFavorite = async () => {
             if (currentCard) {
-                const fav = await isFavorite(currentCard.ayah.id, currentCard.backgroundIndex);
-                setCurrentIsFavorite(fav);
+                const idToCheck = currentCard.type === 'quran' ? currentCard.ayah?.id : currentCard.hadith?.id;
+                if (idToCheck) {
+                    const fav = await isFavorite(idToCheck, currentCard.backgroundIndex);
+                    setCurrentIsFavorite(fav);
+                }
             }
         };
         checkFavorite();
-    }, [currentIndex, currentCard?.ayah.id, currentCard?.backgroundIndex]);
+    }, [currentIndex, currentCard?.ayah?.id, currentCard?.hadith?.id, currentCard?.backgroundIndex]);
+
+    // Handle content filter change
+    const handleSetContentFilter = useCallback((filter: ContentFilter) => {
+        setContentFilter(filter);
+        setCurrentIndex(0);
+        setCards(generateInitialCards(10, filter));
+        // Reset list to top
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    }, []);
 
     // Handle audio for the current card
     const handleAudio = useCallback(() => {
-        if (!currentCard) return;
+        if (!currentCard || currentCard.type !== 'quran' || !currentCard.ayah) return;
         onPlayPause({
             surah_number: currentCard.ayah.surahNumber,
             ayah_number: currentCard.ayah.ayahNumber,
@@ -105,13 +149,21 @@ function MainContent() {
     }, [currentCard, onPlayPause]);
 
     const isPlaying = useMemo(() => {
-        if (!currentCard) return false;
+        if (!currentCard || currentCard.type !== 'quran' || !currentCard.ayah) return false;
         const key = ayaKey(currentCard.ayah.surahNumber, currentCard.ayah.ayahNumber);
         return playingKey === key && status.playing;
     }, [currentCard, playingKey, status.playing, ayaKey]);
 
     const handleToggleTafseer = useCallback(() => {
         setTafseerState(prev => (prev + 1) % 3);
+    }, []);
+
+    const handleToggleHadithEnglish = useCallback(() => {
+        setShowHadithEnglish(prev => !prev);
+    }, []);
+
+    const toggleActions = useCallback(() => {
+        setShowActions(prev => !prev);
     }, []);
 
     // Handle viewability change - only update if different
@@ -127,22 +179,27 @@ function MainContent() {
 
     // Load more cards when reaching end
     const onEndReached = useCallback(() => {
-        setCards(prev => [...prev, ...generateInitialCards(5)]);
-    }, []);
+        setCards(prev => {
+            const nextBatch = Array.from({ length: 5 }, (_, i) => generateCard(contentFilter, prev.length + i));
+            return [...prev, ...nextBatch];
+        });
+    }, [contentFilter]);
 
     // Customization handlers
     const handleNewAyah = useCallback(() => {
-        const { ayah, surah } = getRandomAyah();
+        const newCardContent = generateCard(contentFilter, currentIndex);
         setCards(prev => {
             const newCards = [...prev];
             newCards[currentIndex] = {
                 ...newCards[currentIndex],
-                ayah,
-                surah,
+                type: newCardContent.type,
+                ayah: newCardContent.ayah,
+                surah: newCardContent.surah,
+                hadith: newCardContent.hadith,
             };
             return newCards;
         });
-    }, [currentIndex]);
+    }, [currentIndex, contentFilter]);
 
     const handleSelectBackground = useCallback((index: number) => {
         setCards(prev => {
@@ -172,8 +229,12 @@ function MainContent() {
     const handleToggleFavorite = useCallback(async () => {
         if (!currentCard) return;
 
+        const id = currentCard.type === 'quran' ? currentCard.ayah?.id : currentCard.hadith?.id;
+        if (!id) return;
+
         const result = await toggleFavorite(
-            currentCard.ayah.id,
+            currentCard.type,
+            id,
             currentCard.backgroundIndex,
             currentCard.fontFamily
         );
@@ -213,35 +274,44 @@ function MainContent() {
         const isCurrentCard = index === currentIndex;
 
         return (
-            <View style={[styles.cardWrapper, { height: screenHeight }]}>
+            <Pressable
+                onPress={toggleActions}
+                style={[styles.cardWrapper, { height: screenHeight }]}
+            >
                 <StoryCard
                     ref={isCurrentCard ? shareCardRef : undefined}
+                    type={item.type}
                     ayah={item.ayah}
                     surah={item.surah}
+                    hadith={item.hadith}
                     backgroundImage={item.backgroundImage}
                     fontFamily={item.fontFamily}
                     height={screenHeight}
                     showWatermark={true}
                     tafseerState={tafseerState}
+                    showHadithEnglish={showHadithEnglish}
                 />
 
-                {/* Action buttons only on current card */}
-                {isCurrentCard && (
+                {/* Action buttons only on current card and if showActions is true */}
+                {isCurrentCard && showActions && (
                     <ActionButtons
+                        type={item.type}
                         onShare={handleShare}
                         onCustomize={() => setModalVisible(true)}
                         onFavorite={handleToggleFavorite}
                         onMenu={() => setMenuVisible(true)}
                         onAudio={handleAudio}
                         onToggleTafseer={handleToggleTafseer}
+                        onToggleEnglish={handleToggleHadithEnglish}
                         tafseerState={tafseerState}
                         isFavorite={currentIsFavorite}
                         isPlaying={isPlaying}
+                        showEnglish={showHadithEnglish}
                     />
                 )}
-            </View>
+            </Pressable>
         );
-    }, [currentIndex, handleShare, handleToggleFavorite, currentIsFavorite, screenHeight, isPlaying, handleAudio, handleToggleTafseer, tafseerState]);
+    }, [currentIndex, handleShare, handleToggleFavorite, currentIsFavorite, screenHeight, isPlaying, handleAudio, handleToggleTafseer, handleToggleHadithEnglish, tafseerState, showHadithEnglish, showActions, toggleActions]);
 
 
     // Show favorites screen
@@ -288,8 +358,10 @@ function MainContent() {
                 onRandomFont={handleRandomFont}
                 onShare={handleShare}
                 selectedBackgroundIndex={currentCard?.backgroundIndex ?? 0}
+                type={currentCard?.type ?? 'quran'}
                 previewAyah={currentCard?.ayah}
                 previewSurah={currentCard?.surah}
+                previewHadith={currentCard?.hadith}
                 previewBackground={currentCard?.backgroundImage}
                 previewFont={currentCard?.fontFamily ?? 'Amiri'}
             />
@@ -299,6 +371,8 @@ function MainContent() {
                 visible={menuVisible}
                 onClose={() => setMenuVisible(false)}
                 onGoToFavorites={() => setShowFavorites(true)}
+                contentFilter={contentFilter}
+                onSetContentFilter={handleSetContentFilter}
             />
         </View>
     );

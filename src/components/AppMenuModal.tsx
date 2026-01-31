@@ -9,7 +9,8 @@ import {
     Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AppActionsService } from '../utils/AppActionsService';
+import { ContentFilter } from '../types';
+import { AppActionsService } from '@/utils/AppActionsService';
 
 const { width } = Dimensions.get('window');
 
@@ -17,13 +18,23 @@ interface AppMenuModalProps {
     visible: boolean;
     onClose: () => void;
     onGoToFavorites: () => void;
+    contentFilter: ContentFilter;
+    onSetContentFilter: (filter: ContentFilter) => void;
 }
 
 const AppMenuModal: React.FC<AppMenuModalProps> = ({
     visible,
     onClose,
     onGoToFavorites,
+    contentFilter,
+    onSetContentFilter,
 }) => {
+    const filterOptions: { id: ContentFilter; label: string; icon: any }[] = [
+        { id: 'quran', label: 'قرآن فقط', icon: 'book' },
+        { id: 'hadith', label: 'حديث فقط', icon: 'list' },
+        { id: 'both', label: 'الكل', icon: 'apps' },
+    ];
+
     const menuItems = [
         {
             icon: 'heart',
@@ -34,6 +45,7 @@ const AppMenuModal: React.FC<AppMenuModalProps> = ({
             },
             color: '#FF6B6B',
         },
+        // ... (other menu items)
         {
             icon: 'star',
             label: 'تقييم التطبيق',
@@ -79,6 +91,37 @@ const AppMenuModal: React.FC<AppMenuModalProps> = ({
                             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                                 <Ionicons name="close" size={32} color="#FFFFFF" />
                             </TouchableOpacity>
+                        </View>
+
+                        {/* Content Filter Section */}
+                        <View style={styles.filterSection}>
+                            <Text style={styles.sectionTitle}>نوع المحتوى</Text>
+                            <View style={styles.filterOptions}>
+                                {filterOptions.map((opt) => (
+                                    <TouchableOpacity
+                                        key={opt.id}
+                                        style={[
+                                            styles.filterOption,
+                                            contentFilter === opt.id && styles.filterOptionActive,
+                                        ]}
+                                        onPress={() => onSetContentFilter(opt.id)}
+                                    >
+                                        <Ionicons
+                                            name={opt.icon}
+                                            size={20}
+                                            color={contentFilter === opt.id ? '#FFD700' : 'rgba(255, 255, 255, 0.6)'}
+                                        />
+                                        <Text
+                                            style={[
+                                                styles.filterLabel,
+                                                contentFilter === opt.id && styles.filterLabelActive,
+                                            ]}
+                                        >
+                                            {opt.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         </View>
 
                         {/* Menu Items */}
@@ -164,6 +207,44 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         textAlign: 'right',
         fontWeight: '500',
+    },
+    filterSection: {
+        marginBottom: 30,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        color: 'rgba(255, 255, 255, 0.5)',
+        marginBottom: 12,
+        textAlign: 'right',
+        paddingHorizontal: 5,
+    },
+    filterOptions: {
+        flexDirection: 'row-reverse',
+        gap: 10,
+    },
+    filterOption: {
+        flex: 1,
+        flexDirection: 'row-reverse',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        paddingVertical: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        gap: 8,
+    },
+    filterOptionActive: {
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+        borderColor: 'rgba(255, 215, 0, 0.4)',
+    },
+    filterLabel: {
+        color: 'rgba(255, 255, 255, 0.6)',
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    filterLabelActive: {
+        color: '#FFD700',
     },
     footer: {
         position: 'absolute',

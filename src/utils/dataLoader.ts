@@ -1,15 +1,17 @@
 // Data loader utilities for Islamic Statuses app
-import { Ayah, Surah, AyahWithSurah } from '../types';
+import { Ayah, Surah, AyahWithSurah, Hadith } from '../types';
 
 // Import JSON data
 const ayahData = require('../../assets/json/ayah.json');
 const surahData = require('../../assets/json/surah.json');
 const muyassarData = require('../../assets/json/muyassar.json');
 const ma3anyData = require('../../assets/json/ma3any.json');
+const riyadAssalihinData = require('../../assets/json/riyad_assalihin.json');
 
 // Convert object to array for easier access
 const ayahArray: any[] = Object.values(ayahData);
 const surahMap: Record<number, any> = surahData;
+const hadithArray: any[] = riyadAssalihinData.hadiths;
 
 // Create maps for faster lookup of tafseer and meanings by surah and aya
 const muyassarMap: Record<string, string> = {};
@@ -51,6 +53,22 @@ export const getRandomAyah = (): AyahWithSurah => {
 };
 
 /**
+ * Get a random hadith
+ */
+export const getRandomHadith = (): Hadith => {
+    const randomIndex = Math.floor(Math.random() * hadithArray.length);
+    const rawHadith = hadithArray[randomIndex];
+
+    return {
+        ...rawHadith,
+        metadata: {
+            title: riyadAssalihinData.metadata.arabic.title,
+            author: riyadAssalihinData.metadata.arabic.author,
+        }
+    };
+};
+
+/**
  * Get ayah by ID
  */
 export const getAyahById = (id: number): AyahWithSurah | null => {
@@ -79,11 +97,32 @@ export const getAyahById = (id: number): AyahWithSurah | null => {
     };
 };
 
+/**
+ * Get hadith by ID
+ */
+export const getHadithById = (id: number): Hadith | null => {
+    const hadith = hadithArray.find(h => h.id === id);
+    if (!hadith) return null;
+
+    return {
+        ...hadith,
+        metadata: {
+            title: riyadAssalihinData.metadata.arabic.title,
+            author: riyadAssalihinData.metadata.arabic.author,
+        }
+    };
+};
+
 
 /**
  * Get total number of ayahs
  */
 export const getTotalAyahCount = (): number => ayahArray.length;
+
+/**
+ * Get total number of hadiths
+ */
+export const getTotalHadithCount = (): number => hadithArray.length;
 
 /**
  * Get all surahs

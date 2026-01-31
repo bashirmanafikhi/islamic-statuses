@@ -6,19 +6,22 @@ import {
     StyleSheet,
     Dimensions,
 } from 'react-native';
-import { Ayah, Surah } from '../types';
+import { Ayah, Surah, Hadith } from '../types';
 
 const { width } = Dimensions.get('window');
 
 interface StoryCardProps {
-    ayah: Ayah;
-    surah: Surah;
+    type: 'quran' | 'hadith';
+    ayah?: Ayah;
+    surah?: Surah;
+    hadith?: Hadith;
     backgroundImage: any;
     fontFamily: string;
     showWatermark?: boolean;
     height: number; // Dynamic height from parent
     compact?: boolean; // For preview mode
     tafseerState?: number; // 0: None, 1: Muyassar, 2: Ma3any
+    showHadithEnglish?: boolean;
 }
 
 
@@ -27,7 +30,7 @@ interface StoryCardProps {
  * Fullscreen card displaying an ayah with background image
  */
 const StoryCard = forwardRef<View, StoryCardProps>(
-    ({ ayah, surah, backgroundImage, fontFamily, showWatermark = false, height, compact = false, tafseerState = 0 }, ref) => {
+    ({ type, ayah, surah, hadith, backgroundImage, fontFamily, showWatermark = false, height, compact = false, tafseerState = 0, showHadithEnglish = false }, ref) => {
         const dynamicStyles = {
             container: {
                 width: (compact ? '100%' : width) as any,
@@ -40,9 +43,16 @@ const StoryCard = forwardRef<View, StoryCardProps>(
             surahName: {
                 fontSize: compact ? 14 : 22,
             },
+            hadithText: {
+                fontSize: compact ? 14 : 20,
+                lineHeight: compact ? 24 : 36,
+            }
         };
 
-        const tafseerText = tafseerState === 1 ? ayah.tafseer : (tafseerState === 2 ? ayah.meanings : null);
+        const isQuran = type === 'quran' && ayah && surah;
+        const isHadith = type === 'hadith' && hadith;
+
+        const tafseerText = isQuran ? (tafseerState === 1 ? ayah.tafseer : (tafseerState === 2 ? ayah.meanings : null)) : null;
         const tafseerTitle = tafseerState === 1 ? 'التفسير الميسر' : 'معاني الكلمات';
 
         return (
@@ -57,25 +67,43 @@ const StoryCard = forwardRef<View, StoryCardProps>(
 
                     {/* Content */}
                     <View style={[styles.content, compact && styles.compactContent]}>
-                        {/* Surah name */}
+                        {/* Title / Metadata */}
                         <View style={styles.surahContainer}>
                             <Text style={[styles.surahName, { fontFamily }, dynamicStyles.surahName]}>
-                                {surah.nameArabic}
+                                {isQuran ? surah.nameArabic : hadith?.metadata?.title}
                             </Text>
                         </View>
 
-                        {/* Ayah text */}
+                        {/* Text Content */}
                         <View style={styles.ayahContainer}>
-                            <Text
-                                style={[styles.ayahText, { fontFamily }, dynamicStyles.ayahText]}
-                                numberOfLines={compact ? 4 : (tafseerState > 0 ? 8 : undefined)}
-                            >
-                                {ayah.text}
-                            </Text>
+                            {isQuran ? (
+                                <Text
+                                    style={[styles.ayahText, { fontFamily }, dynamicStyles.ayahText]}
+                                    numberOfLines={compact ? 4 : (tafseerState > 0 ? 8 : undefined)}
+                                >
+                                    {ayah.text}
+                                </Text>
+                            ) : isHadith ? (
+                                <View style={styles.hadithContent}>
+                                    <Text
+                                        style={[styles.ayahText, { fontFamily }, dynamicStyles.hadithText]}
+                                        numberOfLines={compact ? 5 : undefined}
+                                    >
+                                        {hadith.arabic}
+                                    </Text>
+
+                                    {!compact && showHadithEnglish && (
+                                        <View style={styles.englishHadithContainer}>
+                                            <Text style={styles.englishNarrator}>{hadith.english.narrator}</Text>
+                                            <Text style={styles.englishText}>{hadith.english.text}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            ) : null}
                         </View>
 
-                        {/* Tafseer / Meanings Section */}
-                        {!compact && tafseerState > 0 && tafseerText && (
+                        {/* Tafseer / Meanings Section (Quran Only) */}
+                        {!compact && isQuran && tafseerState > 0 && tafseerText && (
                             <View style={styles.tafseerContainer}>
                                 <Text style={styles.tafseerTitle}>{tafseerTitle}</Text>
                                 <Text style={styles.tafseerText} numberOfLines={6}>
@@ -84,11 +112,15 @@ const StoryCard = forwardRef<View, StoryCardProps>(
                             </View>
                         )}
 
-                        {/* Verse key */}
+                        {/* Verse key / Hadith Reference */}
                         {!compact && (
                             <View style={styles.verseKeyContainer}>
                                 <Text style={styles.verseKey}>
-                                    ﴿ {surah.nameArabic} : {ayah.ayahNumber} ﴾
+                                    {isQuran ? (
+                                        `﴿ ${surah.nameArabic} : ${ayah.ayahNumber} ﴾`
+                                    ) : (
+                                        `${hadith?.metadata?.author} - حديث رقم ${hadith?.idInBook}`
+                                    )}
                                 </Text>
                             </View>
                         )}
@@ -205,6 +237,30 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: 'rgba(255, 255, 255, 0.7)',
         textAlign: 'center',
+    },
+    hadithContent: {
+        width: '100%',
+        alignItems: 'center',
+    },
+    englishHadithContainer: {
+        marginTop: 16,
+        padding: 12,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        borderRadius: 12,
+        width: '100%',
+    },
+    englishNarrator: {
+        fontSize: 14,
+        color: '#FFD700',
+        fontWeight: 'bold',
+        marginBottom: 4,
+        textAlign: 'left',
+    },
+    englishText: {
+        fontSize: 14,
+        color: '#FFFFFF',
+        textAlign: 'left',
+        lineHeight: 20,
     },
 });
 
